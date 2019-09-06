@@ -13,27 +13,33 @@ class ViewController: UIViewController {
 
     @IBOutlet weak var cNewImage: UIImageView!
     @IBOutlet weak var cOldImage: UIImageView!
-    let oriImage = UIImage(named: "2")
+    let oriImage = UIImage(named: "2") ?? UIImage()
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
         cOldImage.backgroundColor = nil
         cOldImage.contentMode = .scaleAspectFit
         cOldImage.image = oriImage
-        //cOldImage.drawLayer(, color: <#T##UIColor#>)
-        cOldImage.drawLayer(at: cOldImage.bounds)
-        cOldImage.drawLayer(at: cOldImage.getAspectFitFrame(),color: UIColor.blue)
-        var rect = CGRect(x: 0, y: 0, width: (oriImage?.size.width)! , height: (oriImage?.size.height)!)
-        cOldImage.drawLayerOnOriginImage(at: rect, color: UIColor.green)
-        rect = CGRect(x: 0, y: 0, width: (oriImage?.size.width)! / 2, height: (oriImage?.size.height)!)
-        cOldImage.drawLayerOnOriginImage(at: rect, color: UIColor.orange)
-        cNewImage.drawLayer(at: cNewImage.bounds)
         
-        
-        let img = oriImage?.scaleImage(image: oriImage!, newSize: CGSize(width: 500, height: 800))
         cNewImage.contentMode = .center
-        cNewImage.image = img?.newImage
-        cNewImage.drawLayer(at: cNewImage.getImageFrame(),color: UIColor.black)
+        let img = oriImage.scaleImage(image: oriImage, newSize: CGSize(width: 600,height: 400))
+        cNewImage.image = img.newImage
+        
+        cOldImage.drawLayerByOriginImageRect(at: CGRect(x: 0, y: 0, width: oriImage.size.width, height: oriImage.size.height),color:  UIColor.red)
+        cNewImage.drawLayerByOriginImageRect(at: CGRect(x: 0, y: 0, width: cNewImage.image!.size.width, height: cNewImage.image!.size.height),color:  UIColor.red)
+        
+        
+        let scaleRect = CGRect(x: 10, y: 10, width: 100, height: 50)
+        cNewImage.drawLayerByOriginImageRect(at: scaleRect)
+        let oriRect = cNewImage.image!.transletFromSelfRectToOriginRect(byOriginSize: oriImage.size, fromRect: scaleRect)
+        cOldImage.drawLayerByOriginImageRect(at: oriRect)
+        
+        
+        let sr2 = CGRect(x: 50, y: 100, width: 200, height: 300)
+        cNewImage.drawLayerByOriginImageRect(at: sr2,color: UIColor.yellow)
+        let or2 = cNewImage.image!.transletFromSelfRectToOriginRect(byOriginSize: oriImage.size, fromRect: sr2)
+        cOldImage.drawLayerByOriginImageRect(at: or2,color: UIColor.yellow)
+       
     }
 
     override func didReceiveMemoryWarning() {
@@ -46,6 +52,24 @@ class ViewController: UIViewController {
     }
     
 }
+
+
+/*
+ 1、压缩图片   IMAGE
+ 2、获得压缩图片的新SIZE IMAGE
+ 3、取得压缩图片的定位RECT
+ 4、定位RECT转换为原RECT  IMAGE   参数需要，定位RECT ，原图大小
+ 5、原定位RECT画入UIIMAGEVIEW
+ 5.1 获得view内RECT
+ 5.2
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ */
 extension UIImageView{
     func getAspectFitFrame() -> CGRect{
         if self.image == nil{
@@ -81,7 +105,8 @@ extension UIImageView{
         case .redraw:
             break
         case .center:
-            newRect = CGRect(x: self.bounds.minX + (self.image?.size.width)!/2, y: self.bounds.minY + (self.image?.size.height)!/2, width: (self.image?.size.width)!, height: (self.image?.size.height)!)
+           
+            newRect = CGRect(x: self.bounds.midX - (self.image?.size.width)!/2, y: self.bounds.midY - (self.image?.size.height)!/2, width: (self.image?.size.width)!, height: (self.image?.size.height)!)
             break
         case .top:
             break
@@ -112,22 +137,50 @@ extension UIImageView{
         let ratio = (self.image?.size.width)! / rect.width
         return ratio
     }
-    func drawLayer(at rect: CGRect,color :UIColor = UIColor.red){
+    func getImageRatio() -> CGFloat{
+        if image == nil{
+            return 0.0
+        }
+        switch contentMode {
+        case .scaleAspectFit:
+            let rect = getImageFrame()
+            let ratio = (self.image?.size.width)! / rect.width
+            return ratio
+        case .center:
+            let rect = getImageFrame()
+            let ratio = (self.image?.size.width)! / rect.width
+            return ratio
+        default:
+            let rect = getAspectFitFrame()
+            let ratio = (self.image?.size.width)! / rect.width
+            return ratio
+        }
+        
+    }
+    func drawLayerOnImageView(at rect: CGRect,color :UIColor = UIColor.red){
         let drawL = CALayer()
         drawL.borderWidth = 5
         drawL.borderColor = color.cgColor
         drawL.frame = rect
         self.layer.addSublayer(drawL)
     }
-    func drawLayerOnOriginImage(at rect: CGRect,color :UIColor = UIColor.red){
-        let newRect = AVMakeRect(aspectRatio: rect.size, insideRect: getAspectFitFrame())
-        let imageRect = getAspectFitFrame()
-        let ratio = getAspectFitRatio()
-        let drawL = CALayer()
-        drawL.borderWidth = 2
-        drawL.borderColor = color.cgColor
-        drawL.frame = CGRect(x: imageRect.minX + rect.minX * ratio, y: imageRect.minY + rect.minY * ratio, width: newRect.width, height: newRect.height)
-        self.layer.addSublayer(drawL)
+    func drawLayerByOriginImageRect(at originRect: CGRect,color :UIColor = UIColor.red){
+        switch self.contentMode {
+        case .scaleAspectFit:
+            //let newRect = AVMakeRect(aspectRatio: rect.size, insideRect: getAspectFitFrame())
+            let imageRect = getImageFrame()
+            let imageRatio = getImageRatio()
+            let drawRect = CGRect(x: imageRect.minX + originRect.minX, y: imageRect.minY + originRect.minY, width: originRect.width / imageRatio, height: originRect.height / imageRatio)
+           drawLayerOnImageView(at: drawRect,color:  color)
+        case .center:
+            let imageRect = getImageFrame()
+           
+            let drawRect = CGRect(x: imageRect.minX + originRect.minX, y: imageRect.minY + originRect.minY, width: originRect.width ,height: originRect.height )
+            drawLayerOnImageView(at: drawRect,color:  color)
+        default:
+            break
+        }
+        
     }
 }
 
@@ -140,24 +193,8 @@ extension UIImage {
     func scaleImage(image:UIImage , newSize:CGSize)->(newImage: UIImage,newTargetSize: CGSize){
             //        获得原图像的尺寸属性
             let imageSize = image.size
-            //        获得原图像的宽度数值
-            let width = imageSize.width
-            //        获得原图像的高度数值
-            let height = imageSize.height
-            
+        
             let targetSize = AVMakeRect(aspectRatio: imageSize, insideRect: CGRect(x: 0, y: 0, width: newSize.width, height: newSize.height))
-            //        计算图像新尺寸与旧尺寸的宽高比例
-           
-//            let scaledWidth = width * scalerFactor let widthFactor = newSize.width/width
-//            let heightFactor = newSize.height/height
-//            //        获取最小的比例
-//            let scalerFactor = (widthFactor < heightFactor) ? widthFactor : heightFactor
-//
-//            //        计算图像新的高度和宽度，并构成标准的CGSize对象
-//            let scaledHeight = height * scalerFactor
-//            let targetSize = CGSize(width: scaledWidth, height: scaledHeight)
-//
-            //        创建绘图上下文环境，
             UIGraphicsBeginImageContext(targetSize.size)
             image.draw(in: CGRect(x: 0, y: 0, width: targetSize.width , height: targetSize.height))
             //        获取上下文里的内容，将视图写入到新的图像对象
@@ -165,6 +202,16 @@ extension UIImage {
             
             return (newImage!,targetSize.size)
             
+    }
+    
+    //转换座标系
+    func transletFromSelfRectToOriginRect(byOriginSize originSize: CGSize,fromRect selfRect:CGRect) -> CGRect{
+        let selfSize = self.size
+        let widthF = selfSize.width / originSize.width
+        let heightF = selfSize.height / originSize.height
+        let originRect = CGRect(x: selfRect.minX / widthF, y: selfRect.minY / heightF, width: selfRect.width / widthF, height: selfRect.height / heightF)
+//        let newRect = AVMakeRect(aspectRatio: otherRect.size, insideRect: <#T##CGRect#>)
+        return originRect
     }
     
 }
