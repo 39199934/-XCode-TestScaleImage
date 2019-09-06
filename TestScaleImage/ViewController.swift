@@ -33,6 +33,7 @@ class ViewController: UIViewController {
         let img = oriImage?.scaleImage(image: oriImage!, newSize: CGSize(width: 500, height: 800))
         cNewImage.contentMode = .center
         cNewImage.image = img?.newImage
+        cNewImage.drawLayer(at: cNewImage.getImageFrame(),color: UIColor.black)
     }
 
     override func didReceiveMemoryWarning() {
@@ -59,7 +60,48 @@ extension UIImageView{
 //        let viewCenter = self.center
 //        let rect = CGRect(x: self.center.x - (newImageSize.width / 2), y: self.center.y - (newImageSize.height/2), width: newImageSize.width, height: newImageSize.height)
 //
+        
         let newRect = AVMakeRect(aspectRatio: (self.image?.size)!, insideRect: self.bounds)
+        return newRect
+    }
+    
+    func getImageFrame() -> CGRect{
+        if self.image == nil{
+            return CGRect(x: 0, y: 0, width: 0, height: 0)
+        }
+        var newRect = CGRect()
+        switch self.contentMode{
+            
+        case .scaleToFill:
+            break
+        case .scaleAspectFit:
+            newRect = AVMakeRect(aspectRatio: (self.image?.size)!, insideRect: self.bounds)
+        case .scaleAspectFill:
+            break
+        case .redraw:
+            break
+        case .center:
+            newRect = CGRect(x: self.bounds.minX + (self.image?.size.width)!/2, y: self.bounds.minY + (self.image?.size.height)!/2, width: (self.image?.size.width)!, height: (self.image?.size.height)!)
+            break
+        case .top:
+            break
+        case .bottom:
+            break
+        case .left:
+            break
+        case .right:
+            break
+        case .topLeft:
+            break
+        case .topRight:
+            break
+        case .bottomLeft:
+            break
+        case .bottomRight:
+            break
+        }
+        
+        //let newRect = AVMakeRect(aspectRatio: (self.image?.size)!, insideRect: self.bounds)
         return newRect
     }
     func getAspectFitRatio() -> CGFloat{
@@ -72,7 +114,7 @@ extension UIImageView{
     }
     func drawLayer(at rect: CGRect,color :UIColor = UIColor.red){
         let drawL = CALayer()
-        drawL.borderWidth = 2
+        drawL.borderWidth = 5
         drawL.borderColor = color.cgColor
         drawL.frame = rect
         self.layer.addSublayer(drawL)
